@@ -8,20 +8,59 @@ use Data::Dumper;
 
 use MooseX::App::Simple qw(Color ConfigHome);
 
+option 'aws' => (
+    is => 'ro',
+    isa => 'Bool',
+    cmd_aliases => ['a'],
+    documentation => q/Retrieve AWS EC2 instances instead of using the config file/,
+);
+
+option 'list' => (
+    is => 'ro',
+    isa => 'Bool',
+    cmd_aliases => ['l'],
+    documentation => q/Just print list of known servers & exit/,
+);
+
+option 'verbose' => (
+    is => 'ro',
+    isa => 'Bool',
+    cmd_aliases => ['v'],
+    documentation => q/Verbose output/,
+);
+
 option 'iterate' => (
     is => 'ro',
     isa => 'Bool',
+    cmd_aliases => ['i'],
     documentation => q/Connect to all matching hosts one after the other/,
+);
+
+option 'cmd' => (
+    is => 'ro',
+    isa => 'Str',
+    documentation => q/Run a command on the remote server(s)/,
+);
+
+has 'config_hosts' => (
+    is => 'rw',
+    isa => 'Maybe[HashRef]',
 );
 
 sub run {
     my ($self) = @_;
 
+    # Use retrieved EC2 hosts instead of local config file entries if appropriate
+    $self->get_aws if $self->aws;
+
+    # Just print a list of servers if appropriate
+    $self->print_list if $self->list;
+
     my $hostre = join '.*', @{ $self->extra_argv };
 
     error("Must supply string to match host(s)") unless $hostre;
 
-    my $hosts = $self->_config_data->{hosts};
+    my $hosts = $self->hosts;
 
     my @matching_hosts = grep { m/$hostre/ } sort keys %$hosts;
 
@@ -30,22 +69,65 @@ sub run {
     # Either iterate over all matching hosts, or just use the first
     for my $host ( @matching_hosts ) {
         my $cmd = $self->generate_ssh_cmd($hosts->{$host});
-        say "Executing command: $cmd";
+        say "Executing command: $cmd" if $self->verbose;
         system( $cmd );
         exit unless $self->iterate;
     }
 }
 
+sub get_aws {
+    my ($self) = @_;
+
+    use Net::Amazon::EC2;
+
+    my $aws = $self->_config_data->{aws};
+    my $ec2 = Net::Amazon::EC2->new(
+        AWSAccessKeyId  => $aws->{AWSAccessKeyId},
+        SecretAccessKey => $aws->{SecretAccessKey},
+        region          => $aws->{region}
+    );
+
+    # Get all instances
+    my @instances;
+    my $reservations = $ec2->describe_instances;
+    foreach my $reservation (@$reservations) {
+       foreach my $instance ($reservation->instances_set) {
+           # Ensure only running instances
+           next unless $instance->instance_state->name eq 'running';
+           push @instances, $instance->name;
+       }
+    }
+
+    # Create new hosts hash
+    my %hosts = map { $_ => { hostname => $_ . $aws->{domain} } } @instances;
+
+    # Over-write the local config
+    $self->config_hosts(\%hosts);
+}
+
+sub print_list {
+    my ($self) = @_;
+
+    my $hosts = $self->hosts;
+
+    for my $host (sort keys %$hosts) {
+        say "$host: " . $hosts->{$host}{hostname};
+        }
+    exit;
+}
+
 sub generate_ssh_cmd {
     my ($self, $host) = @_;
 
-    my $cmd = 'ssh';
+    my $cmd = 'ssh ';
 
     $cmd .= ' -p ' . $host->{port} . ' ' if $host->{port};
     $cmd .= ' -i ~/.ssh/' . $host->{ssh_key} . ' ' if $host->{ssh_key};
 
     $cmd .= ' ' . $host->{user} . '@' if $host->{user};
     $cmd .= $host->{hostname};
+
+    $cmd .= " '" . $self->{cmd} . "'" if $self->{cmd};
 
     return $cmd;
 }
@@ -54,6 +136,12 @@ sub error {
     my ($msg) = @_;
     say $msg;
     exit 1;
+}
+
+sub hosts {
+    my ($self) = @_;
+    $self->config_hosts( $self->_config_data->{hosts} ) unless $self->config_hosts;
+    return $self->config_hosts
 }
 
 1;
