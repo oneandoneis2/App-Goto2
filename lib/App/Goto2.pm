@@ -65,6 +65,7 @@ sub run {
     my @matching_hosts = grep { m/$hostre/ } sort keys %$hosts;
 
     error("No matching hosts found") unless @matching_hosts;
+    say "Hosts found: @matching_hosts" if $self->verbose;
 
     # Either iterate over all matching hosts, or just use the first
     for my $host ( @matching_hosts ) {
