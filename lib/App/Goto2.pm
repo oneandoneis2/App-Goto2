@@ -18,16 +18,42 @@ sub run {
     my ($self) = @_;
 
     my $hostre = join '.*', @{ $self->extra_argv };
+
+    error("Must supply string to match host(s)") unless $hostre;
+
     my $hosts = $self->_config_data->{hosts};
-    my @matching_hosts = grep { m/$hostre/ } keys $hosts;
-    if ($self->iterate) {
-        for my $host ( @matching_hosts ) {
-            system( 'ssh ' . $hosts->{$host}{hostname} );
-        }
+
+    my @matching_hosts = grep { m/$hostre/ } sort keys %$hosts;
+
+    error("No matching hosts found") unless @matching_hosts;
+
+    # Either iterate over all matching hosts, or just use the first
+    for my $host ( @matching_hosts ) {
+        my $cmd = $self->generate_ssh_cmd($hosts->{$host});
+        say "Executing command: $cmd";
+        system( $cmd );
+        exit unless $self->iterate;
     }
-    else {
-        exec( 'ssh ' . $hosts->{ $matching_hosts[0] }{hostname} );
-    }
+}
+
+sub generate_ssh_cmd {
+    my ($self, $host) = @_;
+
+    my $cmd = 'ssh';
+
+    $cmd .= ' -p ' . $host->{port} . ' ' if $host->{port};
+    $cmd .= ' -i ~/.ssh/' . $host->{ssh_key} . ' ' if $host->{ssh_key};
+
+    $cmd .= ' ' . $host->{user} . '@' if $host->{user};
+    $cmd .= $host->{hostname};
+
+    return $cmd;
+}
+
+sub error {
+    my ($msg) = @_;
+    say $msg;
+    exit 1;
 }
 
 1;
