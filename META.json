@@ -1,5 +1,5 @@
 {
-   "abstract" : "Blah blah blah",
+   "abstract" : "Easily SSH to many servers",
    "author" : [
       "Dominic Humphries <dominic@oneandoneis2.com>"
    ],
@@ -36,6 +36,8 @@
       },
       "runtime" : {
          "requires" : {
+            "MooseX::App::Simple" : "0",
+            "Net::Amazon::EC2" : "0",
             "perl" : "5.008005"
          }
       },
@@ -46,6 +48,20 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.01"
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/oneandoneis2/App-Goto2/issues"
+      },
+      "homepage" : "https://github.com/oneandoneis2/App-Goto2",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/oneandoneis2/App-Goto2.git",
+         "web" : "https://github.com/oneandoneis2/App-Goto2"
+      }
+   },
+   "version" : "0.01",
+   "x_contributors" : [
+      "Dominic Humphries <dominich@broadbean.com>"
+   ]
 }
 
