@@ -3,7 +3,7 @@ package App::Goto2;
 use strict;
 use warnings;
 use 5.10.0;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 use Data::Dumper;
 
 use MooseX::App::Simple qw(Color ConfigHome);
