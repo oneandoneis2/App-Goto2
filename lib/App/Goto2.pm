@@ -53,12 +53,9 @@ sub run {
     # Use retrieved EC2 hosts instead of local config file entries if appropriate
     $self->get_aws if $self->aws;
 
-    # Just print a list of servers if appropriate
-    $self->print_list if $self->list;
-
     my $hostre = join '.*', @{ $self->extra_argv };
 
-    error("Must supply string to match host(s)") unless $hostre;
+    error("Must supply string to match host(s)") unless $hostre or $self->list;
 
     my $hosts = $self->hosts;
 
@@ -66,6 +63,8 @@ sub run {
 
     error("No matching hosts found") unless @matching_hosts;
     say "Hosts found: @matching_hosts" if $self->verbose;
+    # Just print a list of servers if appropriate
+    $self->print_list(\@matching_hosts) if $self->list;
 
     # Either iterate over all matching hosts, or just use the first
     for my $host ( @matching_hosts ) {
@@ -107,11 +106,11 @@ sub get_aws {
 }
 
 sub print_list {
-    my ($self) = @_;
+    my ($self, $hostnames) = @_;
 
     my $hosts = $self->hosts;
 
-    for my $host (sort keys %$hosts) {
+    for my $host (@$hostnames) {
         say "$host: " . $hosts->{$host}{hostname};
         }
     exit;

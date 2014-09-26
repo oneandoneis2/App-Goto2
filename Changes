@@ -1,6 +1,8 @@
 Revision history for App-Goto2
 
 {{$NEXT}}
+        - Increased verbose output
+        - List option to accept a string to filter results by
 
 0.01  2014-09-25 17:17:05 BST
         - Initial release
