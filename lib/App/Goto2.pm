@@ -174,6 +174,27 @@ You can get a lot of the same functionality (port/user/aliases/etc) just by upda
 ssh config file, but (a) it's harder to share a config file, (b) it wouldn't have the EC2
 integration and (c) it doesn't lend itself to wildcards so well.
 
+=head2 CONFIG
+
+By default, the config file will be looked for in ~/.go2/config.yml
+
+An example layout:
+
+ ---
+ hosts:
+   foo:
+     hostname: fubar.example.com
+     user: myname
+     port: 2222
+   bar:
+     hostname: bar.example.com
+     user: myothername
+ aws:
+   AWSAccessKeyId: ASDFGHJKLZXCVBNMQWER
+   SecretAccessKey: kmj5jgGg7gGKJkqkohknKJHkzhk7hKJHLJKt6tw
+   region: eu-west-1
+   domain: .example.com
+
 =head1 AUTHOR
 
 Dominic Humphries E<lt>dominic@oneandoneis2.comE<gt>
